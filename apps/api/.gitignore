@@ -1,0 +1,10 @@
+# Build
+dist/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Coverage
+coverage/

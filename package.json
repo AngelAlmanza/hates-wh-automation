@@ -1,0 +1,16 @@
+{
+  "name": "hates-wh-automatation",
+  "private": true,
+  "scripts": {
+    "dev:api": "pnpm --filter api dev",
+    "dev:web": "pnpm --filter web dev",
+    "dev": "pnpm --parallel --filter api --filter web dev",
+    "build": "pnpm --filter shared build && pnpm --parallel --filter api --filter web build"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["@nestjs/core", "unrs-resolver"]
+  }
+}

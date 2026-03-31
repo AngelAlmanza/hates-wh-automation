@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+@theme {
+  /* Definimos los colores de la marca */
+  --color-brand-primary: #ad3400;
+  --color-brand-accent: #eab308;
+  --color-brand-cream: #fefae0;
+  --color-brand-dark: #1a1a1b;
+
+  /* Opcional: Crear una escala completa para el color principal */
+  --color-rust-50: #fff1f0;
+  --color-rust-100: #ffdfe0;
+  --color-rust-500: #ad3400;
+  /* Tu color original */
+  --color-rust-700: #8a2a00;
+  --color-rust-900: #4a1700;
+}
