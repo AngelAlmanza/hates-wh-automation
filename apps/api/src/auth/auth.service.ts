@@ -2,11 +2,11 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
+import type { TokenPayload } from '@repo/shared';
 import * as bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
-import type { TokenPayload } from '@repo/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserService } from '../user/user.service';
 
@@ -17,17 +17,17 @@ export class AuthService {
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
-  ) {}
+  ) { }
 
   async validateUser(username: string, password: string) {
     const user = await this.userService.findByUsername(username);
     if (!user || !user.isActive) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Credenciales inválidas');
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Credenciales inválidas');
     }
 
     return user;
@@ -58,16 +58,16 @@ export class AuthService {
     });
 
     if (!storedToken) {
-      throw new UnauthorizedException('Invalid refresh token');
+      throw new UnauthorizedException('Token de refresco inválido');
     }
 
     if (storedToken.expiresAt < new Date()) {
       await this.prisma.refreshToken.delete({ where: { id: storedToken.id } });
-      throw new UnauthorizedException('Refresh token expired');
+      throw new UnauthorizedException('Token de refresco expirado');
     }
 
     if (!storedToken.user.isActive) {
-      throw new UnauthorizedException('User account is disabled');
+      throw new UnauthorizedException('La cuenta del usuario está deshabilitada');
     }
 
     // Delete old token (rotation — single use)
