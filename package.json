@@ -11,6 +11,6 @@
     "typescript": "^5.0.0"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["@nestjs/core", "unrs-resolver"]
+    "onlyBuiltDependencies": ["@nestjs/core", "unrs-resolver", "prisma", "esbuild"]
   }
 }

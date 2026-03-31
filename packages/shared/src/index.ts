@@ -1,3 +1,5 @@
+export * from './auth';
+
 export enum EstadoPedido {
   Pendiente = 'PENDIENTE',
   EnPreparacion = 'EN_PREPARACION',

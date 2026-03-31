@@ -42,24 +42,35 @@ Repository structure (monorepo with pnpm workspaces):
 
 ## Environment variables
 
-Create `apps/api/.env` with:
+Copy the example file and adjust values as needed:
+
+```bash
+cp apps/api/.env.example apps/api/.env
+```
+
+Required variables in `apps/api/.env`:
 
 ```env
 # Database
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/wh_automatation"
+DATABASE_URL="postgresql://postgres:postgres@localhost:5433/wh_automatation"
 
 # JWT
-JWT_SECRET="change_this_to_a_secure_secret"
+JWT_SECRET="change_this_to_a_secure_secret_min_32_chars"
+JWT_ACCESS_EXPIRATION="15m"
+JWT_REFRESH_EXPIRATION="7d"
 
-# WhatsApp Cloud API
+# Server
+PORT=3000
+
+# WhatsApp Cloud API (for later)
 WHATSAPP_TOKEN="your_token"
 WHATSAPP_PHONE_NUMBER_ID="your_phone_number_id"
 WHATSAPP_VERIFY_TOKEN="your_verify_token"
 
-# OpenAI
+# OpenAI (for later)
 OPENAI_API_KEY="your_api_key"
 
-# Cloudflare R2
+# Cloudflare R2 (for later)
 R2_ACCOUNT_ID="your_account_id"
 R2_ACCESS_KEY_ID="your_access_key"
 R2_SECRET_ACCESS_KEY="your_secret_key"
@@ -80,10 +91,14 @@ pnpm install
 docker compose up -d
 ```
 
-**3. Run migrations** *(once Prisma is configured)*
+**3. Run migrations and seed**
 
 ```bash
-pnpm --filter api prisma migrate dev
+# Apply database schema
+pnpm --filter api db:migrate
+
+# Seed the default user (username: pariente, password: $Demo1234, only for development)
+pnpm --filter api npx prisma db seed
 ```
 
 **4. Start the projects**
@@ -96,6 +111,48 @@ pnpm dev
 pnpm dev:api   # NestJS at localhost:3000
 pnpm dev:web   # Vite at localhost:5173
 ```
+
+The frontend proxies `/api` requests to the backend automatically in development.
+
+## Database commands
+
+```bash
+# Run pending migrations
+pnpm --filter api db:migrate
+
+# Push schema changes without creating a migration (dev only)
+pnpm --filter api db:push
+
+# Regenerate Prisma Client after schema changes
+pnpm --filter api db:generate
+
+# Open Prisma Studio (visual DB editor)
+pnpm --filter api npx prisma studio
+
+# Seed the database
+pnpm --filter api npx prisma db seed
+```
+
+## Running tests
+
+```bash
+# All backend unit tests
+pnpm --filter api test
+
+# Backend e2e tests (requires running database)
+pnpm --filter api test:e2e
+
+# Frontend tests
+pnpm --filter web test
+
+# Watch mode
+pnpm --filter api test:watch
+pnpm --filter web test:watch
+```
+
+## API documentation
+
+Swagger UI is available at [http://localhost:3000/api/docs](http://localhost:3000/api/docs) when the API is running.
 
 ## Adding dependencies
 
