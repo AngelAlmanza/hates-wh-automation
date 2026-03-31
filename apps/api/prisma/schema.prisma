@@ -8,6 +8,28 @@ datasource db {
   provider = "postgresql"
 }
 
+// ─── Enums ───────────────────────────────────────────────
+
+enum DeliveryMode {
+  PICKUP
+  DELIVERY
+}
+
+enum PaymentMethod {
+  CASH
+  TRANSFER
+}
+
+enum OrderStatus {
+  PENDING
+  IN_PREPARATION
+  READY
+  DELIVERED
+  CANCELLED
+}
+
+// ─── Auth ────────────────────────────────────────────────
+
 model User {
   id            String         @id @default(uuid())
   username      String         @unique
@@ -17,6 +39,7 @@ model User {
   createdAt     DateTime       @default(now()) @map("created_at")
   updatedAt     DateTime       @updatedAt @map("updated_at")
   refreshTokens RefreshToken[]
+  orders        Order[]
 
   @@map("users")
 }
@@ -30,4 +53,148 @@ model RefreshToken {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("refresh_tokens")
+}
+
+// ─── Product Catalog ─────────────────────────────────────
+
+model Category {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  sortOrder   Int       @default(0) @map("sort_order")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  products    Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id          String              @id @default(uuid())
+  categoryId  String              @map("category_id")
+  category    Category            @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  name        String
+  description String?
+  price       Decimal?            @db.Decimal(10, 2)
+  imageUrl    String?             @map("image_url")
+  isActive    Boolean             @default(true) @map("is_active")
+  sortOrder   Int                 @default(0) @map("sort_order")
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @updatedAt @map("updated_at")
+  variants    ProductVariant[]
+  ingredients ProductIngredient[]
+  orderItems  OrderItem[]
+
+  @@index([categoryId], map: "idx_products_category_id")
+  @@index([isActive], map: "idx_products_is_active")
+  @@map("products")
+}
+
+model ProductVariant {
+  id         String      @id @default(uuid())
+  productId  String      @map("product_id")
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name       String
+  price      Decimal     @db.Decimal(10, 2)
+  isActive   Boolean     @default(true) @map("is_active")
+  sortOrder  Int         @default(0) @map("sort_order")
+  createdAt  DateTime    @default(now()) @map("created_at")
+  updatedAt  DateTime    @updatedAt @map("updated_at")
+  orderItems OrderItem[]
+
+  @@index([productId], map: "idx_product_variants_product_id")
+  @@map("product_variants")
+}
+
+model Ingredient {
+  id          String                      @id @default(uuid())
+  name        String                      @unique
+  createdAt   DateTime                    @default(now()) @map("created_at")
+  updatedAt   DateTime                    @updatedAt @map("updated_at")
+  products    ProductIngredient[]
+  removedFrom OrderItemRemovedIngredient[]
+
+  @@map("ingredients")
+}
+
+model ProductIngredient {
+  id           String     @id @default(uuid())
+  productId    String     @map("product_id")
+  product      Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  ingredientId String     @map("ingredient_id")
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, ingredientId], map: "uq_product_ingredient")
+  @@map("product_ingredients")
+}
+
+// ─── Orders ──────────────────────────────────────────────
+
+model Order {
+  id            String        @id @default(uuid())
+  orderDate     DateTime      @default(now()) @map("order_date") @db.Date
+  dailyFolio    Int           @map("daily_folio")
+  customerName  String        @map("customer_name")
+  deliveryMode  DeliveryMode  @map("delivery_mode")
+  locationUrl   String?       @map("location_url")
+  status        OrderStatus   @default(PENDING)
+  paymentMethod PaymentMethod @map("payment_method")
+  isPaid        Boolean       @default(false) @map("is_paid")
+  notes         String?
+  createdById   String?       @map("created_by_id")
+  createdBy     User?         @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+  items         OrderItem[]
+
+  @@unique([orderDate, dailyFolio], map: "uq_order_date_folio")
+  @@index([orderDate], map: "idx_orders_order_date")
+  @@index([status], map: "idx_orders_status")
+  @@index([createdAt], map: "idx_orders_created_at")
+  @@map("orders")
+}
+
+model OrderItem {
+  id                 String                      @id @default(uuid())
+  orderId            String                      @map("order_id")
+  order              Order                       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId          String                      @map("product_id")
+  product            Product                     @relation(fields: [productId], references: [id], onDelete: Restrict)
+  variantId          String?                     @map("variant_id")
+  variant            ProductVariant?             @relation(fields: [variantId], references: [id], onDelete: Restrict)
+  quantity           Int                         @default(1)
+  unitPrice          Decimal                     @db.Decimal(10, 2) @map("unit_price")
+  productName        String                      @map("product_name")
+  variantName        String?                     @map("variant_name")
+  notes              String?
+  createdAt          DateTime                    @default(now()) @map("created_at")
+  removedIngredients OrderItemRemovedIngredient[]
+  extras             OrderItemExtra[]
+
+  @@index([orderId], map: "idx_order_items_order_id")
+  @@map("order_items")
+}
+
+model OrderItemRemovedIngredient {
+  id             String     @id @default(uuid())
+  orderItemId    String     @map("order_item_id")
+  orderItem      OrderItem  @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  ingredientId   String     @map("ingredient_id")
+  ingredient     Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Restrict)
+  ingredientName String     @map("ingredient_name")
+
+  @@unique([orderItemId, ingredientId], map: "uq_order_item_removed_ingredient")
+  @@map("order_item_removed_ingredients")
+}
+
+model OrderItemExtra {
+  id          String    @id @default(uuid())
+  orderItemId String    @map("order_item_id")
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  description String
+  price       Decimal   @db.Decimal(10, 2)
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@index([orderItemId], map: "idx_order_item_extras_order_item_id")
+  @@map("order_item_extras")
 }
