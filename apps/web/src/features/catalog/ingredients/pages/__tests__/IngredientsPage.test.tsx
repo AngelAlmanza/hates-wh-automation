@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { IngredientsPage } from '../IngredientsPage';
+import { ToastProvider } from '../../../../../shared/components/Toast';
 import * as ingredientsApiModule from '../../api/ingredients.api';
 
 vi.mock('../../api/ingredients.api', () => ({
@@ -30,17 +31,19 @@ const mockIngredients = [
 function renderWithRouter() {
   return render(
     <MemoryRouter initialEntries={['/catalog/ingredients']}>
-      <Routes>
-        <Route path="/catalog/ingredients" element={<IngredientsPage />} />
-        <Route
-          path="/catalog/ingredients/:id/edit"
-          element={<div>Edit Page</div>}
-        />
-        <Route
-          path="/catalog/ingredients/new"
-          element={<div>New Page</div>}
-        />
-      </Routes>
+      <ToastProvider>
+        <Routes>
+          <Route path="/catalog/ingredients" element={<IngredientsPage />} />
+          <Route
+            path="/catalog/ingredients/:id/edit"
+            element={<div>Edit Page</div>}
+          />
+          <Route
+            path="/catalog/ingredients/new"
+            element={<div>New Page</div>}
+          />
+        </Routes>
+      </ToastProvider>
     </MemoryRouter>,
   );
 }
@@ -60,9 +63,9 @@ describe('IngredientsPage', () => {
   });
 
   it('renders ingredients list after loading', async () => {
-    vi.mocked(ingredientsApiModule.ingredientsApi.getAll).mockResolvedValue(
-      mockIngredients,
-    );
+    vi.mocked(ingredientsApiModule.ingredientsApi.getAll).mockResolvedValue({
+      right: mockIngredients,
+    });
     renderWithRouter();
 
     await waitFor(() => {
@@ -72,7 +75,9 @@ describe('IngredientsPage', () => {
   });
 
   it('shows empty state when no ingredients', async () => {
-    vi.mocked(ingredientsApiModule.ingredientsApi.getAll).mockResolvedValue([]);
+    vi.mocked(ingredientsApiModule.ingredientsApi.getAll).mockResolvedValue({
+      right: [],
+    });
     renderWithRouter();
 
     await waitFor(() => {
@@ -80,13 +85,18 @@ describe('IngredientsPage', () => {
     });
   });
 
-  it('shows error state on fetch failure', async () => {
-    vi.mocked(ingredientsApiModule.ingredientsApi.getAll).mockRejectedValue(
-      new Error('Network error'),
-    );
+  it('shows error alert dialog on fetch failure', async () => {
+    vi.mocked(ingredientsApiModule.ingredientsApi.getAll).mockResolvedValue({
+      left: {
+        message: 'Error al cargar los ingredientes',
+        error: 'Internal Server Error',
+        statusCode: 500,
+      },
+    });
     renderWithRouter();
 
     await waitFor(() => {
+      expect(screen.getByRole('alertdialog')).toBeInTheDocument();
       expect(
         screen.getByText('Error al cargar los ingredientes'),
       ).toBeInTheDocument();
@@ -95,7 +105,9 @@ describe('IngredientsPage', () => {
 
   it('navigates to new ingredient page when FAB is clicked', async () => {
     const user = userEvent.setup();
-    vi.mocked(ingredientsApiModule.ingredientsApi.getAll).mockResolvedValue([]);
+    vi.mocked(ingredientsApiModule.ingredientsApi.getAll).mockResolvedValue({
+      right: [],
+    });
     renderWithRouter();
 
     await waitFor(() =>
@@ -109,9 +121,9 @@ describe('IngredientsPage', () => {
 
   it('navigates to edit page when edit button is clicked', async () => {
     const user = userEvent.setup();
-    vi.mocked(ingredientsApiModule.ingredientsApi.getAll).mockResolvedValue(
-      mockIngredients,
-    );
+    vi.mocked(ingredientsApiModule.ingredientsApi.getAll).mockResolvedValue({
+      right: mockIngredients,
+    });
     renderWithRouter();
 
     await waitFor(() =>
@@ -125,9 +137,9 @@ describe('IngredientsPage', () => {
 
   it('opens confirm dialog when delete button is clicked', async () => {
     const user = userEvent.setup();
-    vi.mocked(ingredientsApiModule.ingredientsApi.getAll).mockResolvedValue(
-      mockIngredients,
-    );
+    vi.mocked(ingredientsApiModule.ingredientsApi.getAll).mockResolvedValue({
+      right: mockIngredients,
+    });
     renderWithRouter();
 
     await waitFor(() =>
@@ -144,9 +156,9 @@ describe('IngredientsPage', () => {
 
   it('closes dialog when cancel is clicked', async () => {
     const user = userEvent.setup();
-    vi.mocked(ingredientsApiModule.ingredientsApi.getAll).mockResolvedValue(
-      mockIngredients,
-    );
+    vi.mocked(ingredientsApiModule.ingredientsApi.getAll).mockResolvedValue({
+      right: mockIngredients,
+    });
     renderWithRouter();
 
     await waitFor(() =>
@@ -160,14 +172,14 @@ describe('IngredientsPage', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('calls remove and refetches on confirm delete', async () => {
+  it('calls remove and shows success toast on confirm delete', async () => {
     const user = userEvent.setup();
-    vi.mocked(ingredientsApiModule.ingredientsApi.getAll).mockResolvedValue(
-      mockIngredients,
-    );
-    vi.mocked(ingredientsApiModule.ingredientsApi.remove).mockResolvedValue(
-      undefined as never,
-    );
+    vi.mocked(ingredientsApiModule.ingredientsApi.getAll).mockResolvedValue({
+      right: mockIngredients,
+    });
+    vi.mocked(ingredientsApiModule.ingredientsApi.remove).mockResolvedValue({
+      right: undefined,
+    });
     renderWithRouter();
 
     await waitFor(() =>
@@ -182,16 +194,26 @@ describe('IngredientsPage', () => {
         'ing-1',
       );
     });
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('Ingrediente eliminado correctamente'),
+      ).toBeInTheDocument();
+    });
   });
 
-  it('shows delete error when removal fails', async () => {
+  it('shows error alert dialog when removal fails', async () => {
     const user = userEvent.setup();
-    vi.mocked(ingredientsApiModule.ingredientsApi.getAll).mockResolvedValue(
-      mockIngredients,
-    );
-    vi.mocked(ingredientsApiModule.ingredientsApi.remove).mockRejectedValue(
-      new Error('Conflict'),
-    );
+    vi.mocked(ingredientsApiModule.ingredientsApi.getAll).mockResolvedValue({
+      right: mockIngredients,
+    });
+    vi.mocked(ingredientsApiModule.ingredientsApi.remove).mockResolvedValue({
+      left: {
+        message: 'No se pudo eliminar. El ingrediente puede estar en uso.',
+        error: 'Conflict',
+        statusCode: 409,
+      },
+    });
     renderWithRouter();
 
     await waitFor(() =>

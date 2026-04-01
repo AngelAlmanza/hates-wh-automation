@@ -2,23 +2,32 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { CategoryForm } from '../components/CategoryForm';
 import { categoriesApi, type Category } from '../api/categories.api';
+import { isLeft } from '../../../../shared/lib/safe-request';
+import { ErrorAlertDialog } from '../../../../shared/components/ErrorAlertDialog';
+import { useToast } from '../../../../shared/components/Toast';
 import type { CategoryFormData } from '../schemas/category.schema';
+import type { ApiError } from '../../../../shared/types/api-error';
 
 export function CategoryFormPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const isEditing = Boolean(id);
+  const { showToast } = useToast();
 
   const [category, setCategory] = useState<Category | null>(null);
   const [isLoading, setIsLoading] = useState(isEditing);
+  const [submitError, setSubmitError] = useState<ApiError | null>(null);
 
   useEffect(() => {
     if (!id) return;
-    categoriesApi
-      .getOne(id)
-      .then(setCategory)
-      .catch(() => navigate('/catalog/categories', { replace: true }))
-      .finally(() => setIsLoading(false));
+    categoriesApi.getOne(id).then((result) => {
+      if (isLeft(result)) {
+        navigate('/catalog/categories', { replace: true });
+      } else {
+        setCategory(result.right);
+      }
+      setIsLoading(false);
+    });
   }, [id, navigate]);
 
   const handleSubmit = async (data: CategoryFormData) => {
@@ -28,11 +37,16 @@ export function CategoryFormPage() {
       sortOrder: data.sortOrder,
     };
 
-    if (isEditing && id) {
-      await categoriesApi.update(id, payload);
-    } else {
-      await categoriesApi.create(payload);
+    const result = isEditing && id
+      ? await categoriesApi.update(id, payload)
+      : await categoriesApi.create(payload);
+
+    if (isLeft(result)) {
+      setSubmitError(result.left);
+      throw new Error(result.left.message);
     }
+
+    showToast(isEditing ? 'Categoría actualizada' : 'Categoría creada');
     navigate('/catalog/categories');
   };
 
@@ -70,6 +84,12 @@ export function CategoryFormPage() {
           submitLabel={isEditing ? 'Actualizar' : 'Crear categoría'}
         />
       )}
+
+      <ErrorAlertDialog
+        open={submitError !== null}
+        error={submitError}
+        onClose={() => setSubmitError(null)}
+      />
     </div>
   );
 }

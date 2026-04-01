@@ -1,32 +1,46 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { IngredientForm } from '../components/IngredientForm';
+import { ErrorAlertDialog } from '../../../../shared/components/ErrorAlertDialog';
+import { useToast } from '../../../../shared/components/Toast';
+import { isLeft } from '../../../../shared/lib/safe-request';
+import type { ApiError } from '../../../../shared/types/api-error';
 import { ingredientsApi, type Ingredient } from '../api/ingredients.api';
+import { IngredientForm } from '../components/IngredientForm';
 import type { IngredientFormData } from '../schemas/ingredient.schema';
 
 export function IngredientFormPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const isEditing = Boolean(id);
+  const { showToast } = useToast();
 
   const [ingredient, setIngredient] = useState<Ingredient | null>(null);
   const [isLoading, setIsLoading] = useState(isEditing);
+  const [submitError, setSubmitError] = useState<ApiError | null>(null);
 
   useEffect(() => {
     if (!id) return;
-    ingredientsApi
-      .getOne(id)
-      .then(setIngredient)
-      .catch(() => navigate('/catalog/ingredients', { replace: true }))
-      .finally(() => setIsLoading(false));
+    ingredientsApi.getOne(id).then((result) => {
+      if (isLeft(result)) {
+        navigate('/catalog/ingredients', { replace: true });
+      } else {
+        setIngredient(result.right);
+      }
+      setIsLoading(false);
+    });
   }, [id, navigate]);
 
   const handleSubmit = async (data: IngredientFormData) => {
-    if (isEditing && id) {
-      await ingredientsApi.update(id, data);
-    } else {
-      await ingredientsApi.create(data);
+    const result = isEditing && id
+      ? await ingredientsApi.update(id, data)
+      : await ingredientsApi.create(data);
+
+    if (isLeft(result)) {
+      setSubmitError(result.left);
+      throw new Error(result.left.message);
     }
+
+    showToast(isEditing ? 'Ingrediente actualizado' : 'Ingrediente creado');
     navigate('/catalog/ingredients');
   };
 
@@ -58,6 +72,12 @@ export function IngredientFormPage() {
           submitLabel={isEditing ? 'Actualizar' : 'Crear ingrediente'}
         />
       )}
+
+      <ErrorAlertDialog
+        open={submitError !== null}
+        error={submitError}
+        onClose={() => setSubmitError(null)}
+      />
     </div>
   );
 }

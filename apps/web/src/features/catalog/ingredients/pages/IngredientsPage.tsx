@@ -3,6 +3,10 @@ import { useNavigate } from 'react-router';
 import { useIngredients } from '../hooks/use-ingredients';
 import { ingredientsApi, type Ingredient } from '../api/ingredients.api';
 import { ConfirmDialog } from '../../../../shared/components/ConfirmDialog';
+import { ErrorAlertDialog } from '../../../../shared/components/ErrorAlertDialog';
+import { useToast } from '../../../../shared/components/Toast';
+import { isLeft } from '../../../../shared/lib/safe-request';
+import type { ApiError } from '../../../../shared/types/api-error';
 
 interface DeleteTarget {
   id: string;
@@ -12,24 +16,23 @@ interface DeleteTarget {
 export function IngredientsPage() {
   const navigate = useNavigate();
   const { ingredients, isLoading, error, refetch } = useIngredients();
+  const { showToast } = useToast();
 
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [mutationError, setMutationError] = useState<ApiError | null>(null);
 
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
     setIsDeleting(true);
-    setDeleteError(null);
-    try {
-      await ingredientsApi.remove(deleteTarget.id);
-      setDeleteTarget(null);
+    const result = await ingredientsApi.remove(deleteTarget.id);
+    setIsDeleting(false);
+    setDeleteTarget(null);
+    if (isLeft(result)) {
+      setMutationError(result.left);
+    } else {
+      showToast('Ingrediente eliminado correctamente');
       await refetch();
-    } catch {
-      setDeleteError('No se pudo eliminar. El ingrediente puede estar en uso.');
-      setDeleteTarget(null);
-    } finally {
-      setIsDeleting(false);
     }
   };
 
@@ -44,27 +47,9 @@ export function IngredientsPage() {
         </div>
       </div>
 
-      {deleteError && (
-        <div
-          className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm"
-          role="alert"
-        >
-          {deleteError}
-        </div>
-      )}
-
       {isLoading && (
         <div className="flex justify-center py-12">
           <div className="w-8 h-8 border-4 border-brand-primary/30 border-t-brand-primary rounded-full animate-spin" />
-        </div>
-      )}
-
-      {error && !isLoading && (
-        <div
-          className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm"
-          role="alert"
-        >
-          {error}
         </div>
       )}
 
@@ -141,6 +126,18 @@ export function IngredientsPage() {
         isLoading={isDeleting}
         onConfirm={handleDeleteConfirm}
         onCancel={() => setDeleteTarget(null)}
+      />
+
+      <ErrorAlertDialog
+        open={error !== null}
+        error={error}
+        onClose={() => refetch()}
+      />
+
+      <ErrorAlertDialog
+        open={mutationError !== null}
+        error={mutationError}
+        onClose={() => setMutationError(null)}
       />
     </div>
   );

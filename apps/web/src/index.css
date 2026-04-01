@@ -1,6 +1,19 @@
 @import "tailwindcss";
 
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(1rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 @theme {
+  --animate-slideInRight: slideInRight 0.2s ease-out;
   /* Definimos los colores de la marca */
   --color-brand-primary: #ad3400;
   --color-brand-accent: #eab308;

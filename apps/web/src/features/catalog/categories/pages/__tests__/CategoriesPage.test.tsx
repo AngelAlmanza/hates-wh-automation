@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { CategoriesPage } from '../CategoriesPage';
+import { ToastProvider } from '../../../../../shared/components/Toast';
 import * as categoriesApiModule from '../../api/categories.api';
 
 vi.mock('../../api/categories.api', () => ({
@@ -34,17 +35,19 @@ const mockCategories = [
 function renderWithRouter() {
   return render(
     <MemoryRouter initialEntries={['/catalog/categories']}>
-      <Routes>
-        <Route path="/catalog/categories" element={<CategoriesPage />} />
-        <Route
-          path="/catalog/categories/:id/edit"
-          element={<div>Edit Page</div>}
-        />
-        <Route
-          path="/catalog/categories/new"
-          element={<div>New Page</div>}
-        />
-      </Routes>
+      <ToastProvider>
+        <Routes>
+          <Route path="/catalog/categories" element={<CategoriesPage />} />
+          <Route
+            path="/catalog/categories/:id/edit"
+            element={<div>Edit Page</div>}
+          />
+          <Route
+            path="/catalog/categories/new"
+            element={<div>New Page</div>}
+          />
+        </Routes>
+      </ToastProvider>
     </MemoryRouter>,
   );
 }
@@ -64,9 +67,9 @@ describe('CategoriesPage', () => {
   });
 
   it('renders categories list after loading', async () => {
-    vi.mocked(categoriesApiModule.categoriesApi.getAll).mockResolvedValue(
-      mockCategories,
-    );
+    vi.mocked(categoriesApiModule.categoriesApi.getAll).mockResolvedValue({
+      right: mockCategories,
+    });
     renderWithRouter();
 
     await waitFor(() => {
@@ -76,7 +79,9 @@ describe('CategoriesPage', () => {
   });
 
   it('shows empty state when no categories', async () => {
-    vi.mocked(categoriesApiModule.categoriesApi.getAll).mockResolvedValue([]);
+    vi.mocked(categoriesApiModule.categoriesApi.getAll).mockResolvedValue({
+      right: [],
+    });
     renderWithRouter();
 
     await waitFor(() => {
@@ -84,13 +89,18 @@ describe('CategoriesPage', () => {
     });
   });
 
-  it('shows error state on fetch failure', async () => {
-    vi.mocked(categoriesApiModule.categoriesApi.getAll).mockRejectedValue(
-      new Error('Network error'),
-    );
+  it('shows error alert dialog on fetch failure', async () => {
+    vi.mocked(categoriesApiModule.categoriesApi.getAll).mockResolvedValue({
+      left: {
+        message: 'Error al cargar las categorías',
+        error: 'Internal Server Error',
+        statusCode: 500,
+      },
+    });
     renderWithRouter();
 
     await waitFor(() => {
+      expect(screen.getByRole('alertdialog')).toBeInTheDocument();
       expect(
         screen.getByText('Error al cargar las categorías'),
       ).toBeInTheDocument();
@@ -99,7 +109,9 @@ describe('CategoriesPage', () => {
 
   it('navigates to new category page when FAB is clicked', async () => {
     const user = userEvent.setup();
-    vi.mocked(categoriesApiModule.categoriesApi.getAll).mockResolvedValue([]);
+    vi.mocked(categoriesApiModule.categoriesApi.getAll).mockResolvedValue({
+      right: [],
+    });
     renderWithRouter();
 
     await waitFor(() =>
@@ -113,9 +125,9 @@ describe('CategoriesPage', () => {
 
   it('navigates to edit page when edit button is clicked', async () => {
     const user = userEvent.setup();
-    vi.mocked(categoriesApiModule.categoriesApi.getAll).mockResolvedValue(
-      mockCategories,
-    );
+    vi.mocked(categoriesApiModule.categoriesApi.getAll).mockResolvedValue({
+      right: mockCategories,
+    });
     renderWithRouter();
 
     await waitFor(() =>
@@ -129,9 +141,9 @@ describe('CategoriesPage', () => {
 
   it('opens confirm dialog when delete button is clicked', async () => {
     const user = userEvent.setup();
-    vi.mocked(categoriesApiModule.categoriesApi.getAll).mockResolvedValue(
-      mockCategories,
-    );
+    vi.mocked(categoriesApiModule.categoriesApi.getAll).mockResolvedValue({
+      right: mockCategories,
+    });
     renderWithRouter();
 
     await waitFor(() =>
@@ -148,9 +160,9 @@ describe('CategoriesPage', () => {
 
   it('closes dialog when cancel is clicked', async () => {
     const user = userEvent.setup();
-    vi.mocked(categoriesApiModule.categoriesApi.getAll).mockResolvedValue(
-      mockCategories,
-    );
+    vi.mocked(categoriesApiModule.categoriesApi.getAll).mockResolvedValue({
+      right: mockCategories,
+    });
     renderWithRouter();
 
     await waitFor(() =>
@@ -164,14 +176,14 @@ describe('CategoriesPage', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('calls remove and refetches on confirm delete', async () => {
+  it('calls remove and shows success toast on confirm delete', async () => {
     const user = userEvent.setup();
-    vi.mocked(categoriesApiModule.categoriesApi.getAll).mockResolvedValue(
-      mockCategories,
-    );
-    vi.mocked(categoriesApiModule.categoriesApi.remove).mockResolvedValue(
-      undefined as never,
-    );
+    vi.mocked(categoriesApiModule.categoriesApi.getAll).mockResolvedValue({
+      right: mockCategories,
+    });
+    vi.mocked(categoriesApiModule.categoriesApi.remove).mockResolvedValue({
+      right: undefined,
+    });
     renderWithRouter();
 
     await waitFor(() =>
@@ -186,16 +198,26 @@ describe('CategoriesPage', () => {
         'cat-1',
       );
     });
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('Categoría eliminada correctamente'),
+      ).toBeInTheDocument();
+    });
   });
 
-  it('shows delete error when removal fails', async () => {
+  it('shows error alert dialog when removal fails', async () => {
     const user = userEvent.setup();
-    vi.mocked(categoriesApiModule.categoriesApi.getAll).mockResolvedValue(
-      mockCategories,
-    );
-    vi.mocked(categoriesApiModule.categoriesApi.remove).mockRejectedValue(
-      new Error('Conflict'),
-    );
+    vi.mocked(categoriesApiModule.categoriesApi.getAll).mockResolvedValue({
+      right: mockCategories,
+    });
+    vi.mocked(categoriesApiModule.categoriesApi.remove).mockResolvedValue({
+      left: {
+        message: 'No se pudo eliminar. Verifica que no tenga productos.',
+        error: 'Conflict',
+        statusCode: 409,
+      },
+    });
     renderWithRouter();
 
     await waitFor(() =>

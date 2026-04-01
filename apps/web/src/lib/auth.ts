@@ -31,7 +31,8 @@ export function clearTokens() {
 }
 
 export async function login(credentials: LoginRequest): Promise<{ user: UserProfile }> {
-  const { data } = await axios.post<LoginResponse>('/api/auth/login', credentials);
+  const { data: envelope } = await axios.post<{ data: LoginResponse }>('/api/auth/login', credentials);
+  const data = envelope.data;
   setAccessToken(data.accessToken);
   setRefreshToken(data.refreshToken);
   return { user: data.user };
@@ -43,9 +44,10 @@ export async function refreshTokens(): Promise<string> {
     throw new Error('No refresh token');
   }
 
-  const { data } = await axios.post<RefreshResponse>('/api/auth/refresh', {
+  const { data: envelope } = await axios.post<{ data: RefreshResponse }>('/api/auth/refresh', {
     refreshToken,
   });
+  const data = envelope.data;
 
   setAccessToken(data.accessToken);
   setRefreshToken(data.refreshToken);
