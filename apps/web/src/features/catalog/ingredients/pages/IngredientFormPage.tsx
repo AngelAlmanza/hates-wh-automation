@@ -51,12 +51,12 @@ export function IngredientFormPage() {
       <div className="flex items-center gap-3 mb-6">
         <button
           onClick={() => navigate('/catalog/ingredients')}
-          className="p-2 rounded-lg text-brand-dark/60 hover:text-brand-dark hover:bg-rust-50 transition-colors"
+          className="w-10 h-10 rounded-xl flex items-center justify-center text-brand-dark/50 hover:text-brand-dark hover:bg-rust-50 transition-colors shrink-0"
           aria-label="Volver"
         >
           <BackIcon />
         </button>
-        <h2 className="text-xl font-bold text-brand-dark">
+        <h2 className="text-2xl font-black text-brand-dark leading-tight">
           {isEditing ? 'Editar ingrediente' : 'Nuevo ingrediente'}
         </h2>
       </div>

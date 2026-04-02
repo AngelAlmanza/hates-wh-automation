@@ -73,22 +73,22 @@ export function CategoryForm({
       <div className="w-full">
         <label
           htmlFor="description"
-          className="block text-sm font-medium text-brand-dark mb-1.5"
+          className="block text-base font-semibold text-brand-dark mb-2"
         >
-          Descripción <span className="text-brand-dark/40">(opcional)</span>
+          Descripción <span className="text-brand-dark/40 font-normal text-sm">(opcional)</span>
         </label>
         <textarea
           id="description"
           rows={3}
           placeholder="Breve descripción de la categoría"
           className={`
-            w-full px-4 py-3 rounded-lg text-base
+            w-full px-4 py-3 rounded-xl text-base
             bg-rust-50 border border-rust-100 text-brand-dark
-            placeholder:text-brand-dark/40
+            placeholder:text-brand-dark/35
             transition-colors duration-150
             focus:outline-none focus:ring-2 focus:ring-brand-accent focus:border-transparent
             resize-none
-            ${errors.description ? 'border-red-500 focus:ring-red-400' : ''}
+            ${errors.description ? 'border-red-400 focus:ring-red-400' : ''}
           `}
           aria-invalid={!!errors.description}
           {...register('description')}

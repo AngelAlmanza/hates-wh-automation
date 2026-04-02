@@ -8,8 +8,8 @@ export function Card({ children, className = '', ...props }: CardProps) {
   return (
     <div
       className={`
-        bg-white rounded-2xl border border-rust-100/60
-        shadow-sm p-8
+        bg-white rounded-2xl border border-rust-100/70
+        p-6
         ${className}
       `}
       {...props}

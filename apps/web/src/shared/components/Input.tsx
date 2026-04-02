@@ -14,7 +14,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label
             htmlFor={inputId}
-            className="block text-sm font-medium text-brand-dark mb-1.5"
+            className="block text-base font-semibold text-brand-dark mb-2"
           >
             {label}
           </label>
@@ -23,13 +23,13 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           ref={ref}
           id={inputId}
           className={`
-            w-full h-12 px-4 rounded-lg text-base
+            w-full h-12 px-4 rounded-xl text-base
             bg-rust-50 border border-rust-100 text-brand-dark
-            placeholder:text-brand-dark/40
+            placeholder:text-brand-dark/35
             transition-colors duration-150
             focus:outline-none focus:ring-2 focus:ring-brand-accent focus:border-transparent
             disabled:opacity-50 disabled:cursor-not-allowed
-            ${error ? 'border-red-500 focus:ring-red-400' : ''}
+            ${error ? 'border-red-400 focus:ring-red-400' : ''}
             ${className}
           `}
           aria-invalid={!!error}

@@ -13,15 +13,15 @@ const variantStyles: Record<ButtonVariant, string> = {
   primary:
     'bg-brand-primary text-white hover:bg-rust-700 active:bg-rust-900 focus-visible:ring-brand-accent',
   secondary:
-    'bg-white text-brand-dark border border-rust-100 hover:bg-rust-50 active:bg-rust-100 focus-visible:ring-brand-accent',
+    'bg-white text-brand-dark border border-rust-200 hover:bg-rust-50 active:bg-rust-100 focus-visible:ring-brand-accent',
   ghost:
     'bg-transparent text-brand-dark hover:bg-rust-50 active:bg-rust-100 focus-visible:ring-brand-accent',
 };
 
 const sizeStyles: Record<ButtonSize, string> = {
   sm: 'px-3 py-1.5 text-sm',
-  md: 'px-4 py-2.5 text-base',
-  lg: 'px-6 py-3 text-lg',
+  md: 'px-4 py-3 text-base',
+  lg: 'px-6 py-3.5 text-base font-bold',
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -31,7 +31,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         disabled={disabled || loading}
         className={`
-          inline-flex items-center justify-center font-semibold rounded-lg
+          inline-flex items-center justify-center font-semibold rounded-xl
           transition-colors duration-150 cursor-pointer
           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
           disabled:opacity-50 disabled:cursor-not-allowed

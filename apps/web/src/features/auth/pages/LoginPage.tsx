@@ -6,7 +6,7 @@ export function LoginPage() {
   return (
     <AuthLayout>
       <Card>
-        <h2 className="text-xl font-semibold text-brand-dark mb-6 text-center">
+        <h2 className="text-xl font-black text-brand-dark mb-6 text-center tracking-tight">
           Iniciar sesión
         </h2>
         <LoginForm />
